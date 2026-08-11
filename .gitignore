@@ -1,0 +1,10 @@
+# build output
+bin/
+*.o
+*.i
+*.s
+
+# editor / OS cruft
+.vscode/
+.DS_Store
+*~
