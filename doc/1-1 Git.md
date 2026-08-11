@@ -41,6 +41,34 @@ Markdown is a lightweight, easy-to-learn markup language that uses simple symbol
 
 Syntax cheat sheet: <https://www.markdownguide.org/cheat-sheet/>
 
+## Verified on machine (WSL2, Ubuntu 24.04)
+
+The three-area workflow, observed by editing this very repo:
+
+```
+$ git status --short                       # Working Directory clean
+                                           # (empty = nothing changed)
+
+$ echo "note" >> "doc/1-1 Git.md"          # edit a file
+$ git status --short
+ M doc/1-1 Git.md                          # M (red) = modified, NOT yet staged
+
+$ git add "doc/1-1 Git.md"                 # move Working Dir -> Staging
+$ git status --short
+M  doc/1-1 Git.md                          # M (green) = staged, ready to commit
+
+$ git diff --staged                        # what is in the Staging Area
+diff --git a/doc/1-1 Git.md ...
++note
+
+$ git commit -m "msg"                      # Staging -> Local Repository
+$ git push                                 # Local Repo -> Remote (GitHub)
+```
+
+The color flip from red `M` to green `M` after `git add` is the file moving
+from the Working Directory into the Staging Area — the three-zone model made
+visible.
+
 ## Practice
 
 1. [x] Sign up for a GitHub account.

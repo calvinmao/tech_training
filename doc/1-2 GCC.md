@@ -48,6 +48,57 @@ top -p 12345                # live task manager; press q to exit
 kill 12345                  # stop the infinite loop and free memory
 ```
 
+## Verified on machine (WSL2, Ubuntu 24.04, gcc 13.3)
+
+The four stages, each output observed:
+
+```
+$ gcc -E src/loop.c -o build/loop.i   # Preprocess: 195 B text file
+$ tail -3 build/loop.i                # the macro LOOP has been replaced by 1
+int main(void)
+{
+    while (1);                        // <- #define LOOP 1 substituted in
+}
+
+$ gcc -S build/loop.i -o build/loop.s # Compile: assembly
+$ head -8 build/loop.s
+        .file  "loop.c"
+        .text
+        .globl main
+main:
+.L2:
+        nop                          # <- the infinite loop body
+        jmp  .L2                     # <- jumps back to .L2 forever
+
+$ gcc -c build/loop.s -o build/loop.o # Assemble: ELF relocatable (not yet linked)
+$ file build/loop.o
+build/loop.o: ELF 64-bit LSB relocatable, x86-64 ... not stripped
+
+$ gcc build/loop.o -o build/loop      # Link: final executable
+$ file build/loop
+build/loop: ELF 64-bit LSB pie executable, x86-64, dynamically linked, ...
+```
+
+Running the ELF and watching it become a process:
+
+```
+$ ./build/loop &
+[1] 41159
+$ top -b -n 1 -p 41159 | tail -1
+    PID USER  PR  NI   VIRT   RES   SHR S %CPU %MEM  TIME+ COMMAND
+  41159 hmao  20   0   2556  1152  1060 R 100.0  0.0  0:01.31 loop   # <- 100% CPU, R=Running
+
+$ cat /proc/41159/comm        # process name (binary name, not the ELF path)
+loop
+$ readlink /proc/41159/exe    # the ELF file this process was loaded from
+/home/hmao/.../build/loop
+$ kill 41159                  # SIGTERM -> process terminated
+```
+
+This is the program-vs-process boundary in action: `build/loop` on disk is just
+an ELF file (static data); once executed it becomes PID 41159, a live process
+consuming 100% CPU, which disappears again on `kill`.
+
 ## Practice
 
 1. [x] Install `gcc` on any Linux environment (Ubuntu/Rocky Lab or Windows WSL).
